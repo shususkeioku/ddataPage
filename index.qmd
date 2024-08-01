@@ -1,5 +1,5 @@
 ---
-title: "Our first r-shinylive Quarto document!"
+title: "Diplomatic Representation Data"
 filters:
   - shinylive
 ---

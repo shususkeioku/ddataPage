@@ -2,6 +2,11 @@ project:
   title: "ddataPage"
   type: website
   output-dir: docs
+  
+website:
+  navbar:
+    left: 
+      - index.qmd
 
 
 
