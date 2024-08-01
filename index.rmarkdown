@@ -4,9 +4,13 @@ filters:
   - shinylive
 ---
 
+
+
 ## Diplomatic Representation Data
 
-```{shinylive-r}
+
+
+```{r}
 #| standalone: true
 #| viewerHeight: 600
 
@@ -84,3 +88,4 @@ server <- function(input, output) {
 # Run the application 
 shinyApp(ui = ui, server = server)
 ```
+
