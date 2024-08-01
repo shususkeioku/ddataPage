@@ -8,77 +8,54 @@ filters:
 #| standalone: true
 #| viewerHeight: 600
 
+library(tidyverse)
 library(shiny)
-library(bslib)
-library(datasets)
+library(leaflet)
+library(geosphere)
+library(ggplot2)
+library(maps)
+library(RCurl)
 
-# Data pre-processing ----
-# Tweak the "am" variable to have nicer factor labels -- since this
-# doesn't rely on any user inputs, we can do this once at startup
-# and then use the value throughout the lifetime of the app
-mpgData <- read_csv("mpgData.csv")
-mpgData$am <- factor(mpgData$am, labels = c("Automatic", "Manual"))
+d <- getURL("https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv")
+data <- read_csv(text = d)
 
-
-# Define UI for miles per gallon app ----
-ui <- page_sidebar(
-
-  # App title ----
-  title = "Miles Per Gallon",
-
-  # Sidebar panel for inputs ----
-  sidebar = sidebar(
-
-    # Input: Selector for variable to plot against mpg ----
-    selectInput(
-      "variable",
-      "Variable:",
-      c(
-        "Cylinders" = "cyl",
-        "Transmission" = "am",
-        "Gears" = "gear"
-      )
+# UI
+ui <- fluidPage(
+  titlePanel("Diplomatic Ties Visualization"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("year", "Select Year", 
+                  min = min(data$year), 
+                  max = max(data$year), 
+                  value = min(data$year),
+                  step = 1)
     ),
-
-    # Input: Checkbox for whether outliers should be included ----
-    checkboxInput("outliers", "Show outliers", TRUE)
-  ),
-
-  # Output: Formatted text for caption ----
-  h3(textOutput("caption")),
-
-  # Output: Plot of the requested variable against mpg ----
-  plotOutput("mpgPlot")
+    mainPanel(
+      plotOutput("world_map")
+    )
+  )
 )
 
-# Define server logic to plot various variables against mpg ----
+# Server
 server <- function(input, output) {
-
-  # Compute the formula text ----
-  # This is in a reactive expression since it is shared by the
-  # output$caption and output$mpgPlot functions
-  formulaText <- reactive({
-    paste("mpg ~", input$variable)
-  })
-
-  # Return the formula text for printing as a caption ----
-  output$caption <- renderText({
-    formulaText()
-  })
-
-  # Generate a plot of the requested variable against mpg ----
-  # and only exclude outliers if requested
-  output$mpgPlot <- renderPlot({
-    boxplot(
-      as.formula(formulaText()),
-      data = mpgData,
-      outline = input$outliers,
-      col = "#75AADB",
-      pch = 19
-    )
+  output$world_map <- renderPlot({
+    filtered_data <- data %>%
+      filter(year == input$year)
+    
+    world <- map_data("world")
+    
+    ggplot() +
+      geom_polygon(data = world, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+      geom_curve(data = filtered_data, aes(x = lon180.x, y = lat.x, xend = lon180.y, yend = lat.y),
+                 curvature = 0.2, color = "blue", size = 0.5, alpha = 0.5) +
+      coord_fixed() +
+      theme_minimal() +
+      theme(axis.text = element_blank(),
+            axis.title = element_blank(),
+            panel.grid = element_blank())
   })
 }
 
-# Create Shiny app ----
-shinyApp(ui, server)
+# Run the application 
+shinyApp(ui = ui, server = server)
 ```
