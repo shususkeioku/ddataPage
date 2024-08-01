@@ -131,8 +131,6 @@ library(ggplot2)
 library(maps)
 
 data_url &lt;- "https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv"
-download.file(data_url, "data.csv")
-readLines(url(data_url))
 data &lt;- read.csv(data_url)
 
 # UI
