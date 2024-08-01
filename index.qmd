@@ -16,8 +16,7 @@ library(ggplot2)
 library(maps)
 library(RCurl)
 
-d <- getURL("https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv")
-data <- read_csv(text = d)
+data <- readRDS(url("https://github.com/shususkeioku/ddataPage/raw/main/adg.rds"))
 
 # UI
 ui <- fluidPage(

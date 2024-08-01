@@ -145,8 +145,13 @@ library(ggplot2)
 library(maps)
 library(RCurl)
 
-d &lt;- getURL("https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv")
-data &lt;- read_csv(text = d)
+data &lt;- data.frame(
+  ccodes = c(2, 200, 365),
+  ccoder = c(200, 220, 710),
+  year = c(1900, 2001, 2002),
+  dr = c(1, 1, 1),
+  dm = c(0, 0, 0)
+)
 
 # UI
 ui &lt;- fluidPage(
