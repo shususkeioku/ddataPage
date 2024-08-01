@@ -1,5 +1,5 @@
 ---
-title: "Diplomatic Representation Data"
+title: "Diplomatic Relations Visualized"
 filters:
   - shinylive
 ---
