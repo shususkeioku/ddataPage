@@ -1,5 +1,5 @@
 ---
-title: "Diplomatic Relations Visualized"
+title: ""
 filters:
   - shinylive
 ---
@@ -14,20 +14,33 @@ library(leaflet)
 library(geosphere)
 library(ggplot2)
 library(maps)
-library(RCurl)
 
-data <- readRDS(url("https://github.com/shususkeioku/ddataPage/raw/main/adg.rds"))
+data_url <- "https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv"
+download.file(data_url, "data.csv")
+readLines(url(data_url))
+data <- read.csv(data_url)
 
 # UI
 ui <- fluidPage(
-  titlePanel("Diplomatic Ties Visualization"),
+  titlePanel("Diplomatic Ties Visualized"),
   sidebarLayout(
     sidebarPanel(
       sliderInput("year", "Select Year", 
                   min = min(data$year), 
                   max = max(data$year), 
                   value = min(data$year),
-                  step = 1)
+                  step = 1),
+      checkboxGroupInput(
+        "dm", "Mission Rank",
+        c("Ambassador" = 1, "Minister" = 2, "Charge d'Affaires" = 3, "Consul" = 4, "Other" = 5),
+        c(1, 2, 3, 4, 5)
+      ),
+      selectInput("sen", "Sender:",
+        append(data$ccodes, "ALL"), "ALL"
+      ),
+      selectInput("rec", "Receiver:",
+        append(data$ccoder, "ALL"), "ALL"
+      ),
     ),
     mainPanel(
       plotOutput("world_map")
@@ -38,15 +51,26 @@ ui <- fluidPage(
 # Server
 server <- function(input, output) {
   output$world_map <- renderPlot({
-    filtered_data <- data %>%
-      filter(year == input$year)
+    if (input$sen == "ALL" & input$rec == "ALL") {
+      filtered_data <- data %>%
+        filter(year == input$year, dm %in% input$dm)
+    } else if (input$sen == "ALL") {
+      filtered_data <- data %>%
+        filter(year == input$year, dm %in% input$dm, ccoder == input$rec)
+    } else if (input$rec == "ALL") {
+      filtered_data <- data %>%
+        filter(year == input$year, dm %in% input$dm, ccodes == input$sen)
+    } else {
+      filtered_data <- data %>%
+        filter(year == input$year, dm %in% input$dm, ccodes == input$sen, ccoder == input$rec) 
+    }
     
     world <- map_data("world")
     
     ggplot() +
       geom_polygon(data = world, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
-      geom_curve(data = filtered_data, aes(x = lon180.x, y = lat.x, xend = lon180.y, yend = lat.y),
-                 curvature = 0.2, color = "blue", size = 0.5, alpha = 0.5) +
+      geom_curve(data = filtered_data, aes(x = lon180.x, y = lat.x, xend = lon180.y, yend = lat.y, color = dm),
+                 curvature = 0.2, size = 0.5, alpha = 0.5) +
       coord_fixed() +
       theme_minimal() +
       theme(axis.text = element_blank(),

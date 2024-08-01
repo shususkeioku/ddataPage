@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Diplomatic Relations Visualized – Diplomatic Representation Data</title>
+<title>Diplomatic Representation Data</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -94,7 +94,7 @@ ul.task-list li input[type="checkbox"] {
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
     <a class="nav-link active" href="./index.html" aria-current="page"> 
-<span class="menu-text">Diplomatic Relations Visualized</span></a>
+<span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./download.html"> 
@@ -115,23 +115,7 @@ ul.task-list li input[type="checkbox"] {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Diplomatic Relations Visualized</h1>
-</div>
 
-
-
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
-
-
-</header>
 
 
 <pre class="shinylive-r" data-engine="r"><code>#| standalone: true
@@ -143,26 +127,33 @@ library(leaflet)
 library(geosphere)
 library(ggplot2)
 library(maps)
-library(RCurl)
 
-data &lt;- data.frame(
-  ccodes = c(2, 200, 365),
-  ccoder = c(200, 220, 710),
-  year = c(1900, 2001, 2002),
-  dr = c(1, 1, 1),
-  dm = c(0, 0, 0)
-)
+data_url &lt;- "https://raw.githubusercontent.com/shususkeioku/ddataPage/main/adg.csv"
+download.file(data_url, "data.csv")
+readLines(url(data_url))
+data &lt;- read.csv(data_url)
 
 # UI
 ui &lt;- fluidPage(
-  titlePanel("Diplomatic Ties Visualization"),
+  titlePanel("Diplomatic Ties Visualized"),
   sidebarLayout(
     sidebarPanel(
       sliderInput("year", "Select Year", 
                   min = min(data$year), 
                   max = max(data$year), 
                   value = min(data$year),
-                  step = 1)
+                  step = 1),
+      checkboxGroupInput(
+        "dm", "Mission Rank",
+        c("Ambassador" = 1, "Minister" = 2, "Charge d'Affaires" = 3, "Consul" = 4, "Other" = 5),
+        c(1, 2, 3, 4, 5)
+      ),
+      selectInput("sen", "Sender:",
+        append(data$ccodes, "ALL"), "ALL"
+      ),
+      selectInput("rec", "Receiver:",
+        append(data$ccoder, "ALL"), "ALL"
+      ),
     ),
     mainPanel(
       plotOutput("world_map")
@@ -173,15 +164,26 @@ ui &lt;- fluidPage(
 # Server
 server &lt;- function(input, output) {
   output$world_map &lt;- renderPlot({
-    filtered_data &lt;- data %&gt;%
-      filter(year == input$year)
+    if (input$sen == "ALL" &amp; input$rec == "ALL") {
+      filtered_data &lt;- data %&gt;%
+        filter(year == input$year, dm %in% input$dm)
+    } else if (input$sen == "ALL") {
+      filtered_data &lt;- data %&gt;%
+        filter(year == input$year, dm %in% input$dm, ccoder == input$rec)
+    } else if (input$rec == "ALL") {
+      filtered_data &lt;- data %&gt;%
+        filter(year == input$year, dm %in% input$dm, ccodes == input$sen)
+    } else {
+      filtered_data &lt;- data %&gt;%
+        filter(year == input$year, dm %in% input$dm, ccodes == input$sen, ccoder == input$rec) 
+    }
     
     world &lt;- map_data("world")
     
     ggplot() +
       geom_polygon(data = world, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
-      geom_curve(data = filtered_data, aes(x = lon180.x, y = lat.x, xend = lon180.y, yend = lat.y),
-                 curvature = 0.2, color = "blue", size = 0.5, alpha = 0.5) +
+      geom_curve(data = filtered_data, aes(x = lon180.x, y = lat.x, xend = lon180.y, yend = lat.y, color = dm),
+                 curvature = 0.2, size = 0.5, alpha = 0.5) +
       coord_fixed() +
       theme_minimal() +
       theme(axis.text = element_blank(),

@@ -6,7 +6,8 @@ project:
 website:
   navbar:
     left: 
-      - index.qmd
+      - text: "Home"
+        href: index.html
       - download.qmd
 
 
